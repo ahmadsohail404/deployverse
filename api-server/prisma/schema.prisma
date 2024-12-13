@@ -25,7 +25,7 @@ model Project {
   id           String        @id @default(uuid())
   name         String
   githubURL    String        @map("github_url")
-  subDomain    String        @map("subdomain")
+  subDomain    String        @unique @map("subdomain")
   customDomain String?       @map("custom_domain")
   Deployement  Deployement[]
 

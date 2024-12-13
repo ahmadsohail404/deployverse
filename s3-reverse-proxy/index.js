@@ -14,10 +14,10 @@ const proxy = httpProxy.createProxy()
 
 app.use(async (req, res) => {
     const hostname = req.hostname;
-    const subdomain = hostname.split('.')[0];
+    const subDomain = hostname.split('.')[0];
 
     const project = await prisma.project.findUnique({
-        where: { subdomain: subdomain },
+        where: { subDomain: subDomain },
         select: { id: true }
     })
 

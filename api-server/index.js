@@ -34,7 +34,7 @@ const kafka = new Kafka({
 })
 
 const client = createClient({
-    url: process.env.CLICKHOUSE_HOST,
+    host: process.env.CLICKHOUSE_HOST,
     database: process.env.CLICKHOUSE_DATABASE,
     username: process.env.CLICKHOUSE_USER,
     password: process.env.CLICKHOUSE_PASSWORD,
@@ -70,7 +70,7 @@ app.use(cors())
 app.post('/project', async (req, res) => {
     const schema = z.object({
         name: z.string(),
-        githubURL: z.string()
+        githubURL: z.string().url()
     })
     const safeParseResult = schema.safeParse(req.body)
 
@@ -121,11 +121,11 @@ app.post('/deploy', async (req, res) => {
         overrides: {
             containerOverrides: [
                 {
-                    name: 'build-server-img',
+                    name: 'builder-image',
                     environment: [
                         { name: 'GITHUB_REPOSITORY__URL', value: project.githubURL },
                         { name: 'PROJECT_ID', value: projectId },
-                        { name: 'DEPLOYEMENT_ID', value: deployment.id },
+                        { name: 'DEPLOYMENT_ID', value: deployment.id },
                     ]
                 }
             ]
@@ -167,12 +167,12 @@ async function initkafkaConsumer() {
             for (const message of messages) {
                 if (!message.value) continue;
                 const stringMessage = message.value.toString()
-                const { PROJECT_ID, DEPLOYEMENT_ID, log } = JSON.parse(stringMessage)
-                console.log({ log, DEPLOYEMENT_ID })
+                const { PROJECT_ID, DEPLOYMENT_ID, log } = JSON.parse(stringMessage)
+                console.log({ log, DEPLOYMENT_ID })
                 try {
                     const { query_id } = await client.insert({
                         table: 'log_events',
-                        values: [{ event_id: uuidv4(), deployment_id: DEPLOYEMENT_ID, log }],
+                        values: [{ event_id: uuidv4(), deployment_id: DEPLOYMENT_ID, log }],
                         format: 'JSONEachRow'
                     })
                     console.log(query_id)

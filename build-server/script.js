@@ -1,11 +1,10 @@
+require('dotenv').config();
 const { exec } = require('child_process')
 const path = require('path')
 const fs = require('fs')
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3')
 const mime = require('mime-types')
 const { Kafka } = require('kafkajs')
-
-require('dotenv').config();
 
 const s3Client = new S3Client({
     region: process.env.AWS_REGION,
@@ -16,7 +15,7 @@ const s3Client = new S3Client({
 })
 
 const PROJECT_ID = process.env.PROJECT_ID
-const DEPLOYEMENT_ID = process.env.DEPLOYEMENT_ID
+const DEPLOYMENT_ID = process.env.DEPLOYMENT_ID
 
 const kafka = new Kafka({
     clientId: `docker-build-server-${DEPLOYMENT_ID}`,
@@ -34,7 +33,7 @@ const kafka = new Kafka({
 const producer = kafka.producer()
 
 async function publishLog(log) {
-    await producer.send({ topic: `container-logs`, messages: [{ key: 'log', value: JSON.stringify({ PROJECT_ID, DEPLOYEMENT_ID, log }) }] })
+    await producer.send({ topic: `container-logs`, messages: [{ key: 'log', value: JSON.stringify({ PROJECT_ID, DEPLOYMENT_ID, log }) }] })
 }
 
 async function init() {
