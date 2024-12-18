@@ -30,7 +30,6 @@ app.use(async (req, res) => {
     const resolvesTo = `${BASE_PATH}/${id}`
 
     return proxy.web(req, res, { target: resolvesTo, changeOrigin: true })
-
 })
 
 proxy.on('proxyReq', (proxyReq, req, res) => {

@@ -51,6 +51,8 @@ io.on('connection', socket => {
 
 io.listen(9001, () => console.log('Socket Server 9001'))
 
+// io.to(`logs:${DEPLOYMENT_ID}`).emit('message', JSON.stringify({ log }));
+
 const ecsClient = new ECSClient({
     region: process.env.AWS_REGION,
     credentials: {
@@ -78,11 +80,26 @@ app.post('/project', async (req, res) => {
 
     const { name, githubURL } = safeParseResult.data
 
+    let subDomain = name.trim() ? name : generateSlug();
+
+    let isUnique = false;
+    while (!isUnique) {
+        const existingProject = await prisma.project.findUnique({
+            where: { subDomain }
+        });
+
+        if (!existingProject) {
+            isUnique = true;
+        } else {
+            subDomain = generateSlug();
+        }
+    }
+
     const project = await prisma.project.create({
         data: {
             name,
             githubURL,
-            subDomain: generateSlug()
+            subDomain
         }
     })
 
@@ -163,12 +180,13 @@ async function initkafkaConsumer() {
         eachBatch: async function ({ batch, heartbeat, commitOffsetsIfNecessary, resolveOffset }) {
 
             const messages = batch.messages;
-            console.log(`Recv. ${messages.length} messages..`)
+            console.log(`Received ${messages.length} messages..`)
             for (const message of messages) {
                 if (!message.value) continue;
                 const stringMessage = message.value.toString()
                 const { PROJECT_ID, DEPLOYMENT_ID, log } = JSON.parse(stringMessage)
-                console.log({ log, DEPLOYMENT_ID })
+                console.log(`Emitting log to channel: logs:${DEPLOYMENT_ID}`);
+                io.to(`logs:${DEPLOYMENT_ID}`).emit('message', JSON.stringify({ log }));
                 try {
                     const { query_id } = await client.insert({
                         table: 'log_events',
